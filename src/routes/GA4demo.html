@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>GA Automation</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        /* Style the body */
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            height: 100%;
+        }
+
+        /* Header/logo Title */
+        .header {
+            padding: 1px;
+            text-align: center;
+            background: #1abc9c;
+            color: white;
+        }
+
+        /* Increase the font size of the heading */
+        .header h1 {
+            font-size: 40px;
+        }
+
+        /* Style the top navigation bar */
+        .navbar {
+            overflow: hidden;
+            background-color: #333;
+        }
+
+        /* Style the navigation bar links */
+        .navbar a {
+            float: left;
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+
+        /* Right-aligned link */
+        .navbar a.right {
+            float: right;
+        }
+
+        /* Change color on hover */
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        /* Column container */
+        .row {
+            display: -ms-flexbox;
+            /* IE10 */
+            display: flex;
+            -ms-flex-wrap: wrap;
+            /* IE10 */
+            flex-wrap: wrap;
+            height: 100%;
+        }
+
+        /* Create two unequal columns that sits next to each other */
+        /* Sidebar/left column */
+        .side {
+            -ms-flex: 30%;
+            /* IE10 */
+            flex: 30%;
+            background-color: #f1f1f1;
+            padding: 20px;
+        }
+
+        .formEl {
+            margin: 0 auto;
+            -ms-flex: 30%;
+            /* IE10 */
+            flex: 30%;
+            background-color: #f1f1f1;
+            padding: 50px;
+
+        }
+
+
+        .vertical {
+            border-left: 6px solid black;
+            height: 380px;
+            position: absolute;
+            left: 50%;
+        }
+
+        /* Footer */
+        .footer {
+            position: sticky;
+            width: 100%;
+            left: 0;
+            bottom: 0;
+            text-align: center;
+            background: #ddd;
+        }
+
+        /* Responsive layout - when the screen is less than 700px wide, make the two columns stack on top of each other instead of next to each other */
+        @media screen and (max-width: 700px) {
+            .row {
+                flex-direction: column;
+            }
+        }
+
+        /* Responsive layout - when the screen is less than 400px wide, make the navigation links stack on top of each other instead of next to each other */
+        @media screen and (max-width: 400px) {
+            .navbar a {
+                float: none;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body onload="authenticate()">
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://apis.google.com/js/client.js?onload=authorize"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/xlsx.full.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/jszip.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.min.js"></script>
+<script>
+ 
+var countryCodeVal;
+var inputBrandVal;
+var websiteURL;
+var myAccArray = [];
+var myAccNameArray = [];
+let myAccountMap = new Map(); 
+ var globalAccID;
+var globalPropertyID;
+var globalViewID;
+
+  function authenticate() {
+    return gapi.auth2.getAuthInstance().signIn({scope: "https://www.googleapis.com/auth/analytics https://www.googleapis.com/auth/analytics.edit https://www.googleapis.com/auth/analytics.readonly"})
+        .then(function() { 
+		console.log("Sign-in successful");
+  gapi.load("client:auth2", function() {
+    //gapi.auth2.init({client_id: "838907780347-j0pna147bct0gk964d7oktav6479afno.apps.googleusercontent.com"});
+	gapi.auth2.init({client_id: "1058039873506-3alm401hbqadnr2rd8a1cgorhk3v2tqa.apps.googleusercontent.com"});
+  });
+		},
+              function(err) { console.error("Error signing in", err); });
+  }
+  
+  function loadClient() {
+    gapi.client.setApiKey("7f67ee854ffa8f96961a99964197c642993cdf7a");
+    return gapi.client.load("https://analyticsadmin.googleapis.com/$discovery/rest?version=v1alpha")
+        .then(function() { console.log("GAPI client loaded for API"); },
+              function(err) { console.error("Error loading GAPI client for API", err); });
+  }
+  // Make sure the client is loaded and sign-in is complete before calling this method.
+  function execute() {
+    return gapi.client.analyticsadmin.accounts.list({})
+        .then(function(response) {
+                // Handle the results here (response.result has the parsed body).
+                console.log("Response", response);
+              },
+              function(err) { console.error("Execute error", err); });
+  }
+  gapi.load("client:auth2", function() {
+    gapi.auth2.init({client_id: "1058039873506-3alm401hbqadnr2rd8a1cgorhk3v2tqa.apps.googleusercontent.com"});
+  });
+  
+  function queryAccounts() {
+  // Load the Google Analytics client library.
+  gapi.client.load('analyticsadmin', 'v1alpha').then(function() {
+
+    // Get a list of all Google Analytics accounts for this user
+    gapi.client.analyticsadmin.accounts.list({}).then(handleAccounts);
+  });
+}
+
+
+
+ 
+function handleAccounts(response) {
+  // Handles the response from the accounts list method.
+countryCodeVal="";
+inputBrandVal="";
+websiteURL="";
+myAccArray = [];
+myAccNameArray = [];
+myAccountMap = new Map(); 
+
+  //inputBrandVal = document.getElementById("accname").value.toLowerCase();
+  //countryCodeVal = document.getElementById("countryCode").value.toLowerCase();
+  //websiteURL = document.getElementById("websiteURL").value.toLowerCase();
+  inputBrandVal = document.getElementById("accname").value;
+  countryCodeVal = document.getElementById("countryCode").value;
+  websiteURL = document.getElementById("websiteURL").value;
+  
+  console.log('Total number of accounts.. '+ response.result.items.length);
+  if (response.result.items && response.result.items.length) {
+    var accounts = response.result.items;
+	//var firstAccountId = response.result.items[0];
+    for (var i = 0, account; account = accounts[i]; i++) {
+      //console.log('Account Name: ' + account.name);
+	 //console.log('Account Id: ' + account.id);
+      //console.log('Account Kind: ' + account.kind);
+       //console.log('Account Created: ' + account.created);
+      //console.log('Account Updated: ' + account.updated);
+    // Query for properties.
+	
+	matchString = inputBrandVal.toLowerCase();
+    accountName = account.name;
+    if (accountName.toLowerCase().indexOf(matchString) != -1){
+    //alert('Matched');
+     myAccArray.push(account.id);
+	 myAccNameArray.push(account.name);
+	 myAccountMap.set(account.name,account.id);
+	//if(inputBrandVal.equalsIgnoreCase(account.name)){
+     console.log('Searched Account Exists, Proceed for Property & View Creation: ' + account.name);
+	 console.log('Account Id: ' + account.id);
+     console.log('Account Kind: ' + account.kind);
+     //console.log('Account Created: ' + account.created);
+     //console.log('Account Updated: ' + account.updated);
+	 
+	 //break;
+	}
+  }
+  } else {
+    //console.log('No accounts found for this search.');
+	swal("No Accounts Found for this LoggedIn User")
+  }
+  console.log('Accounts Found: ' + myAccArray + ' ' + myAccArray.length);
+  console.log('Accounts Found: ' + myAccNameArray);
+  if(myAccArray.length >1){
+  showAccountListPopwithBox(myAccArray,myAccNameArray);
+  //queryProperties(myAccArray[0],myAccNameArray);
+  }else if(myAccArray.length == 1){
+  showAccountListPop(myAccArray[0],myAccNameArray);
+  }
+  else{
+  swal("No Accounts Found for this Search, Try Manually")
+  }
+}
+
+
+/*
+function getAccountHtml1(myAccArray,myAccNameArray){
+ var buttons = $('<div>');
+ for (var i = 0; i < myAccNameArray.length; i++) {
+    //myAccNameArray[i]:myAccArray[i]
+    buttons.append(createButton(myAccNameArray[i], function() {
+	swal.close();
+	}));
+}
+return buttons
+}
+
+function createButton(text, cb) {
+  return $('<button>' + text + '</button>').on('click', cb);
+}
+
+function getAccountHtml(myAccArray,myAccNameArray){
+var popup = open("", "Popup", "width=300,height=200");
+var txtOk = popup.document.createElement("TEXTAREA");
+var buttonEl = popup.document.createElement("button");
+
+buttonEl.innerHTML = "Click here";
+
+popup.document.body.appendChild(txtOk);
+popup.document.body.appendChild(buttonEl);
+}
+*/
+
+function queryProperties(accountId,myAccNameArray) {
+globalAccID = accountId;
+  // Get a list of all the properties for the account.
+  gapi.client.analytics.management.webproperties.list(
+      {'accountId': accountId})
+    .then(handleProperties)
+    .then(null, function(err) {
+      // Log any errors.
+      console.log(err);
+  });
+}
+
+
+function handleProperties(response) {
+  // Handles the response from the webproperties list method.
+  if (response.result.items && response.result.items.length) {
+    //console.log('Properties List... '+response.result.items);
+	//console.log('countryCodeVal ... '+countryCodeVal);
+    var accountIds;
+	var properties = response.result.items;
+	var propList = [];
+	var propListName = [];
+    for (var i = 0, property; property = properties[i]; i++) {
+      console.log('Account Id: ' + property.accountId);
+      console.log('Property Id: ' + property.id);
+      console.log('Property Name: ' + property.name);
+	  accountIds = property.accountId;
+     if (property.websiteUrl) {
+        console.log('Property URL: ' + property.websiteUrl);
+      }
+	  var propName = property.name.toLowerCase();
+	var resul = propName.match(countryCodeVal+"[^\/]+"+inputBrandVal)
+	   if(resul == null)
+        console.log('No Property Match found,So creating New property');
+    else
+	{
+	propList.push(property.id);
+        console.log('Property Match found,So dont create New ');
+		//swal("There is already Property Exists \n"+ property.id +"...."+ property.name)
+		break;
+		}
+    }
+	
+    //var firstAccountId = response.result.items[0].accountId;
+    //var firstPropertyId = response.result.items[0].id;
+	if(propList.length >0){
+  swal("There is already Property Exists \n"+ propList)
+  }else{
+    createNewProperty(accountIds);
+	//showAccountListPop(accountIds)
+	}
+  } else if(response.result.totalResults == '0'){
+    createNewProperty(globalAccID);
+    console.log('No properties found for this user account.reating new..');
+  }else {
+      console.log('No properties found for this user account.');
+    }
+}
+/*
+function showAccountListPop(accountIds){
+//var buttons = getAccountHtml(myAccArray,myAccNameArray);
+//console.log(buttons);
+swal({
+  title: "Please Confirm Below Details?",
+  text: "Once Confirmed, Property and Views are Created Under selected Account!",
+  icon: "warning",
+  dangerMode: false,
+    
+}).then((plzContinue) => {
+  if (plzContinue) {
+    //swal("Creating views and property")
+	//queryProperties(myAccArray[0]);
+	createNewProperty(accountIds);
+  } else {
+    swal("Cancelled!");
+  }
+});
+}
+*/
+
+function showAccountListPopwithBox(accountIds){
+
+swal({
+  title: "Please Confirm Below Details?",
+  text: "Once Confirmed, Property and Views are Created Under selected Account \n   \n"+ myAccNameArray,
+  icon: "warning",
+  buttons: ["Cancel", "Continue"],
+content: "input",
+}).then((plzContinue) => {  if (plzContinue) {
+   //alert(plzContinue);
+   var accountIdChosen = myAccountMap.get(plzContinue);
+   console.log('accountIdChosen...'+accountIdChosen);
+   queryProperties(accountIdChosen,myAccNameArray);
+   
+      } else {
+    swal("Cancelled!");
+  }
+});
+
+}
+
+function showAccountListPop(accountIds){
+
+swal({
+  title: "Please Confirm Below Details?",
+  text: "Once Confirmed, Property and Views are Created Under selected Account \n   \n"+ myAccNameArray[0],
+  icon: "warning",
+  buttons: ["Cancel", "Continue"],
+}).then((plzContinue) => {  if (plzContinue) {
+   //createNewProperty(accountIds);
+   queryProperties(accountIds,myAccNameArray);
+      } else {
+    swal("Cancelled!");
+  }
+});
+
+}
+
+/*
+ * This request creates a new property.
+ */
+function createNewProperty(accountIds) {
+console.log('creating propsss.');
+var propName = countryCodeVal+" | "+inputBrandVal;
+  var request = gapi.client.analytics.management.webproperties.insert(
+    {
+      'accountId': accountIds,
+      'resource': {
+        'websiteUrl': websiteURL,
+        'name': propName
+      }
+    });
+  request.execute(function (response) {
+  // Handle the response.  
+  console.log("Response..", response);
+  if(response.accountId != null){
+  var accountId = response.accountId;
+var webPropertyId = response.id;
+var masterViewName =  countryCodeVal+" | "+inputBrandVal+" | Master View";
+var unfilteredViewName =  countryCodeVal+" | "+inputBrandVal+" | Unfiltered View";
+var testUnfilteredViewName =  countryCodeVal+" | "+inputBrandVal+" | Test Unfiltered View";
+
+  insertNewMasterView(accountId,webPropertyId,masterViewName);
+  insertNewMasterView(accountId,webPropertyId,unfilteredViewName);
+  insertNewMasterView(accountId,webPropertyId,testUnfilteredViewName);
+   
+             }else if(response.error){
+			 alert(response.error.message);
+			 } },
+       function(err) { console.error("Execute error", err); }
+  
+  );
+
+}
+
+function insertNewMasterView(accountId,webPropertyId,viewName) {
+//var accountId = response.accountId;
+//var webPropertyId = response.id;
+//var viewName =  countryCodeVal+" | "+inputBrandVal+" |  Master View";
+ console.log("Creating Views for", accountId +"  " + webPropertyId +"  " +viewName);
+
+  var request = gapi.client.analytics.management.profiles.insert(
+    {
+      'accountId': accountId,
+      'webPropertyId': webPropertyId,
+      'resource': {
+        'name': viewName,
+        'eCommerceTracking': true,
+		'enhancedECommerceTracking': true
+		 }
+    });
+  request.execute(function (response) {
+  // Handle the results here (response.result has the parsed body).
+                console.log("Create View Response", response);
+				if (viewName.indexOf("| Master View") != -1){
+				// Load uploadCDGoalsFilters for master View
+				var viewId = response.id;
+				uploadCDGoalsFilters(accountId,webPropertyId,viewId);
+				}
+              },function(err) { console.error("Execute error", err); });
+
+}
+
+
+
+
+function uploadCDGoalsFilters(accountId,webPropertyId,viewId) {
+
+console.log("uploading goals and filters..."+accountId+"  "+webPropertyId+"  "+viewId);
+
+ globalAccID = accountId;
+ globalPropertyID = webPropertyId;
+ globalViewID = viewId;
+checkExistingFilters(globalAccID);
+insertGoals();
+insertFilter();
+insertHostNameFilter();
+insertRequestURIFilter();
+insertCustomDimensions();
+}
+
+function insertGoals() {
+console.log("insertGoals...");
+console.log("Reading goals xlsx...");
+
+//var url = "/Studio%20Initiative-GA%20Automation/New_Goals.xlsx";
+var url1 = "https://pradeepecom.000webhostapp.com/Studio%20Initiative-GA%20Automation/New_Goals.xlsx";
+
+ //var excelRows = readXLSX(url1);
+ 
+ var oReq = new XMLHttpRequest();
+
+oReq.open("GET", url1, true);
+oReq.responseType = "arraybuffer";
+console.log("read Goals XL File..");
+oReq.onload = function(e) {
+  var arraybuffer = oReq.response;
+  /* convert data to binary string */
+  var data = new Uint8Array(arraybuffer);
+  var arr = new Array();
+  for(var i = 0; i != data.length; ++i) arr[i] = String.fromCharCode(data[i]);
+  var bstr = arr.join("");
+
+  /* Call XLSX */
+  var workbook = XLSX.read(bstr, {type:"binary"});
+   var Sheet = workbook.SheetNames[0];
+ 
+        //Read all rows from First Sheet into an JSON array.
+        var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
+        console.log(excelRows);
+        //Add the data rows from Excel file.
+		
+		myGoalsLoopExcel(excelRows);
+		/*
+        for (var i = 0; i < excelRows.length; i++) {
+		var goalName = excelRows[i].GoalName;
+		 //console.log(excelRows[i].GoalName);
+		 var goalType = excelRows[i].GoalType;
+		 //console.log(excelRows[i].GoalType);
+		 var Goal_ID = excelRows[i].Goal_ID;
+		 var eventActionComparison = excelRows[i].Goal_eventActionComparison;
+		 var Goal_eventAction = excelRows[i].Goal_eventAction;
+		 //console.log(excelRows[i].Goal_ID);
+		 //console.log(excelRows[i].Goal_eventActionComparison);
+		 //console.log(excelRows[i].Goal_eventAction);
+		 if(excelRows[i].GoalType == "EVENT"){
+			
+			console.log("Inserting an EVENT ...");
+			//setTimeout(function() { 
+               console.log(i); 
+			insertEVENT(Goal_ID,goalName,goalType,eventActionComparison,Goal_eventAction);
+			//}, 1000 * i);
+			}
+			else if(excelRows[i].GoalType == "VISIT_TIME_ON_SITE"){
+			
+			console.log("Insert a Duration..");
+			//setTimeout(function() { 
+               console.log(i); 
+  
+			insertVISIT_TIME(Goal_ID,goalName,goalType,eventActionComparison,Goal_eventAction);
+			//}, 1000 * i);
+			}
+			else if(excelRows[i].GoalType == "VISIT_NUM_PAGES"){
+			
+              console.log("Insert a Page Per Session..");
+			   //setTimeout(function() { 
+               console.log(i); 
+  
+			  insertVISIT_PAGES(Goal_ID,goalName,goalType,eventActionComparison,Goal_eventAction);
+			  //}, 1000 * i); 
+			  
+			  }
+          //delay(i);    				 
+		}
+		*/
+              
+ /*
+        for (var i = 0; i < excelRows.length; i++) {
+		 console.log(excelRows[i].GoalName);
+		 console.log(excelRows[i].GoalType);
+		 console.log(excelRows[i].Goal_ID);
+		 console.log(excelRows[i].Goal_eventActionComparison);
+		 console.log(excelRows[i].Goal_eventAction);
+		 					 
+		}*/
+ //console.log(excelRows);
+}
+oReq.send();
+ 
+ 
+}
+
+var i = 0;                  //  set your counter to 1
+function myGoalsLoopExcel(excelRows) {         //  create a loop function
+  setTimeout(function() {   //  call a 3s setTimeout when the loop is called
+    
+	var goalName = excelRows[i].GoalName;
+		 //console.log(excelRows[i].GoalName);
+		 var goalType = excelRows[i].GoalType;
+		 //console.log(excelRows[i].GoalType);
+		 var Goal_ID = excelRows[i].Goal_ID;
+		 var eventActionComparison = excelRows[i].Goal_eventActionComparison;
+		 var Goal_eventAction = excelRows[i].Goal_eventAction;
+		 
+		 if(excelRows[i].GoalType == "EVENT"){
+			
+			console.log("Inserting an EVENT ..."+goalName);
+			
+			insertEVENT(Goal_ID,goalName,goalType,eventActionComparison,Goal_eventAction);
+			
+			}
+			else if(excelRows[i].GoalType == "VISIT_TIME_ON_SITE"){
+			
+			console.log("Insert a Duration.."+goalName);
+			
+			insertVISIT_TIME(Goal_ID,goalName,goalType,eventActionComparison,Goal_eventAction);
+			
+			}
+			else if(excelRows[i].GoalType == "VISIT_NUM_PAGES"){
+			
+              console.log("Insert a Page Per Session.."+goalName);
+			  
+			  insertVISIT_PAGES(Goal_ID,goalName,goalType,eventActionComparison,Goal_eventAction);
+			  
+			  }
+			  
+	
+    i++;                    //  increment the counter
+    if (i < excelRows.length) {           //  if the counter < 10, call the loop function
+      myGoalsLoopExcel(excelRows);             //  ..  again which will trigger another 
+    }                       //  ..  setTimeout()
+  }, 3000)
+}
+
+
+function readXLSX(url) {
+
+var oReq = new XMLHttpRequest();
+
+oReq.open("GET", url, true);
+oReq.responseType = "arraybuffer";
+console.log("read Goals XL File..");
+oReq.onload = function(e) {
+  var arraybuffer = oReq.response;
+  /* convert data to binary string */
+  var data = new Uint8Array(arraybuffer);
+  var arr = new Array();
+  for(var i = 0; i != data.length; ++i) arr[i] = String.fromCharCode(data[i]);
+  var bstr = arr.join("");
+
+  /* Call XLSX */
+  var workbook = XLSX.read(bstr, {type:"binary"});
+   var Sheet = workbook.SheetNames[0];
+ 
+        //Read all rows from First Sheet into an JSON array.
+        var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
+ 
+              
+return excelRows;
+ //console.log(excelRows);
+}
+oReq.send();
+
+}
+
+function insertFilter() {
+console.log("insertFilter...");
+console.log("Reading Filters xlsx...");
+
+var url = "https://pradeepecom.000webhostapp.com/Studio%20Initiative-GA%20Automation/filterDetails.xlsx";
+
+ //var excelRows = readXLSX(url);
+ 
+ var oReq = new XMLHttpRequest();
+
+oReq.open("GET", url, true);
+oReq.responseType = "arraybuffer";
+console.log("read Filter XL File..");
+oReq.onload = function(e) {
+  var arraybuffer = oReq.response;
+  /* convert data to binary string */
+  var data = new Uint8Array(arraybuffer);
+  var arr = new Array();
+  for(var i = 0; i != data.length; ++i) arr[i] = String.fromCharCode(data[i]);
+  var bstr = arr.join("");
+
+  /* Call XLSX */
+  var workbook = XLSX.read(bstr, {type:"binary"});
+   var Sheet = workbook.SheetNames[0];
+ 
+        //Read all rows from First Sheet into an JSON array.
+        var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
+ 
+ console.log(excelRows);
+ myFilterLoopExcel(excelRows);
+ /*
+  for (var i = 0; i < excelRows.length; i++) {
+		var FilterName = excelRows[i].FilterName;
+		 var FilterType = excelRows[i].FilterType;
+		 var CaseSensitive = excelRows[i].CaseSensitive;
+		 var FilterPattern = excelRows[i].FilterPattern;
+		 
+		  //setTimeout(function() { 
+      console.log(i); 
+  
+		 insertFilterRows(FilterName,FilterType,CaseSensitive,FilterPattern);
+		 
+		 //}, 1000 * i); 
+		 }
+        */
+ 
+}
+oReq.send();
+ 
+}
+
+var j = 0;                  //  set your counter to 1
+function myFilterLoopExcel(excelRows) {         //  create a loop function
+  setTimeout(function() {   //  call a 3s setTimeout when the loop is called
+    var Flag = true;
+	var FilterId;
+	var FilterName = excelRows[j].FilterName;
+		 var FilterType = excelRows[j].FilterType;
+		 var CaseSensitive = excelRows[j].CaseSensitive;
+		 var FilterPattern = excelRows[j].FilterPattern;
+		 //accountName.toLowerCase().indexOf(matchString) != -1
+		 
+		for (var i = 0, filter; filter = filtersList[i]; i++) {
+      if(FilterName.toLowerCase() == filter.name ){
+      console.log('Filter exists, Name: ' + filter.name);
+	  //insertFilterRows(FilterName,FilterType,CaseSensitive,FilterPattern);
+	  //insertProfileFilterlink(FilterName,FilterType,CaseSensitive,FilterPattern,filter.id);
+	  FilterId = filter.id;
+	  Flag = false;
+	  break;
+	  }
+	  }
+	  if (Flag){
+		 insertFilterRows(FilterName,FilterType,CaseSensitive,FilterPattern);
+		 }else{
+		 console.log('Filter exists,LinkFilter FilterId' + FilterId +" "+ FilterName);
+		 insertProfileFilterlink(FilterName,FilterType,CaseSensitive,FilterPattern,FilterId);
+		 }
+		
+    j++;                    //  increment the counter
+    if (j < excelRows.length) {           //  if the counter < 10, call the loop function
+      myFilterLoopExcel(excelRows);             //  ..  again which will trigger another 
+    }                       //  ..  setTimeout()
+  }, 3000)
+}
+
+function delay(i) { 
+  setTimeout(function() { 
+      console.log(i); 
+  }, 1000 * i); 
+}
+
+function insertEVENT(goalID,goalName,goalType,eventActionComparison,eventAction){
+  var request = gapi.client.analytics.management.goals.insert(
+    {
+      'accountId': globalAccID,
+      'webPropertyId': globalPropertyID,
+      'profileId': globalViewID,
+      'resource': {
+        'id': goalID,
+        'active': true,
+        'name': goalName,
+        'type': goalType,
+         'eventDetails': {
+               'useEventValue': 'True',
+               'eventConditions': [
+                 {
+                   'type': 'ACTION',
+                   'matchType': eventActionComparison,
+                   'expression': eventAction
+                    }
+                    ]
+                  }
+      }
+    });
+  request.execute(function (response) { // Handle the response. 
+  });
+
+}
+
+function insertVISIT_TIME(goalID,goalName,goalType,eventActionComparison,eventAction){
+  var request = gapi.client.analytics.management.goals.insert(
+    {
+      'accountId': globalAccID,
+      'webPropertyId': globalPropertyID,
+      'profileId': globalViewID,
+      'resource': {
+        'id': goalID,
+        'active': true,
+        'name': goalName,
+        'type': goalType,
+         'visitTimeOnSiteDetails': {
+                'comparisonType': eventActionComparison,
+                'comparisonValue': eventAction
+                          }
+      }
+    });
+  request.execute(function (response) { // Handle the response. 
+  });
+
+}
+
+function insertVISIT_PAGES(goalID,goalName,goalType,eventActionComparison,eventAction){
+  var request = gapi.client.analytics.management.goals.insert(
+    {
+      'accountId': globalAccID,
+      'webPropertyId': globalPropertyID,
+      'profileId': globalViewID,
+      'resource': {
+        'id': goalID,
+        'active': true,
+        'name': goalName,
+        'type': goalType,
+        'visitNumPagesDetails': {
+             'comparisonType': eventActionComparison,
+             'comparisonValue': eventAction
+              }
+      }
+    });
+  request.execute(function (response) { // Handle the response. 
+  });
+
+}
+
+
+
+
+function insertHostNameFilter(){
+var filtername = "Host Name";
+var URLobj = new URL(websiteURL);
+
+var FilterPattern = URLobj.hostname.replace('www.','').replace('.com','');
+var FilterType = "INCLUDE";
+var CaseSensitive = false;
+var Filterfield = "PAGE_HOSTNAME";
+insertFilterHostRequestURI(filtername,FilterType,CaseSensitive,FilterPattern,Filterfield)
+
+}
+
+function insertRequestURIFilter(){
+var filtername = "Request URI";
+var URLobj = new URL(websiteURL);
+
+var FilterPattern = URLobj.hostname;
+var FilterType = "INCLUDE";
+var CaseSensitive = false;
+var Filterfield = "PAGE_REQUEST_URI";
+insertFilterHostRequestURI(filtername,FilterType,CaseSensitive,FilterPattern,Filterfield)
+
+}
+
+function insertFilterHostRequestURI(FilterName,FilterType,CaseSensitive,FilterPattern,Filterfield) {
+  console.log("Inserting a Filter... "+FilterName);
+   
+  var request = gapi.client.analytics.management.filters.insert(
+    {
+      'accountId': globalAccID,
+      'resource': {
+        'name': FilterName,
+        'type': FilterType,
+        'includeDetails': {
+          'field': Filterfield,
+          'expressionValue': FilterPattern,
+          'caseSensitive': CaseSensitive
+        }
+      }
+    });
+  request.execute(function (response) { // Handle the response. 
+  insertProfileFilterlink(FilterName,FilterType,CaseSensitive,FilterPattern,response.id);
+  });
+}
+
+function insertFilterRows(FilterName,FilterType,CaseSensitive,FilterPattern) {
+  console.log("Inserting a Filter... "+FilterName);
+  var includeExclude = "excludeDetails";
+  var Filterfield = "GEO_IP_ADDRESS";
+    
+  var request = gapi.client.analytics.management.filters.insert(
+    {
+      'accountId': globalAccID,
+      'resource': {
+        'name': FilterName,
+        'type': FilterType,
+        'excludeDetails': {
+          'field': Filterfield,
+          'expressionValue': FilterPattern,
+          'caseSensitive': CaseSensitive
+        }
+      }
+    });
+  request.execute(function (response) { // Handle the response. 
+  insertProfileFilterlink(FilterName,FilterType,CaseSensitive,FilterPattern,response.id);
+  });
+}
+
+
+function insertProfileFilterlink(FilterName,FilterType,CaseSensitive,FilterPattern,filterId) {
+  console.log("Inserting a Filter... "+FilterName);
+  var request = gapi.client.analytics.management.profileFilterLinks.insert(
+    {
+      'accountId': globalAccID,
+	  'webPropertyId': globalPropertyID,
+      'profileId': globalViewID,
+      'resource': {
+         "filterRef": {
+          'id': filterId,
+          'name': FilterName
+        }
+      }
+    });
+  request.execute(function (response) { // Handle the response. 
+  });
+}
+
+function checkExistingFilters(accountId){
+  var request = gapi.client.analytics.management.filters.list({
+    'accountId': accountId
+  });
+  request.execute(checkFilters);
+
+}
+
+var filtersList;
+function checkFilters(results) {
+
+if (results && !results.error) {
+    filtersList = results.items;
+   /* for (var i = 0, filter; filter = filtersList[i]; i++) {
+      if(filter.name == "Unilever IP Filter 1")
+      console.log('Filter Name: ' + filter.name);
+	  
+	  }*/
+	  }
+	  
+}
+
+</script>
+<div class="header">
+  <h1>GA Automation</h1>
+  <p>Unilever_Digital_Analytics_Squad</p>
+</div>
+<div class="navbar">
+  <a href="#">Home</a>
+  <a href="#">Report</a>
+  <a href="#" class="right">LogOut</a>
+</div>
+
+    <div class="row">
+        <!--
+<button onclick="authenticate().then(loadClient)">authorize and load</button>
+<br>
+Helloo GA Tester
+<br> 
+<p> 
+<button onclick="queryAccounts()">execute</button>  
+  </p>   <form class="formEl" onSubmit="return queryAccounts()">
+  -->
+
+        <div class="formEl" style="width: 100%;">
+            <div style="margin-bottom: 24px;">
+                <h4>Please Enter Below Mandatory Details </h4>
+            </div>
+
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px;">
+                <label for="accname">Global Brand Name: </label>
+                <input type="text" id="accname" name="accname" value="">
+            </div>
+
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px;">
+                <label for="countryCode">Country Locale Code: </label>
+                <input type="text" id="countryCode" name="countryCode" value="">
+            </div>
+
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px;">
+                <label for="languageCode">Language Code: (optional) </label>
+                <input type="text" id="languageCode" name="languageCode" value="">
+            </div>
+
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px;">
+                <label for="websiteURL">websiteURL: (use https://) </label>
+                <input type="text" id="websiteURL" name="websiteURL" value="">
+            </div>
+
+            <input name="Submit" type="button" onclick="queryAccounts()" value="Execute">
+
+        </div>
+
+        <div class="vertical"></div>
+
+        <div class="formEl">
+            <label><h4>Once the new profile converted to GA360 Please run this to insert custom dimensions.  </h4></label>
+         <!--   <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px; " >
+                <div>Web Property id: </div>
+                <input type="text" value="">
+            </div>
+
+            <input name="Submit" type="button" value="Insert Custom Dimensions" style="margin-bottom: 24px;"> -->
+
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px; " >
+                <div>Account ID </div>
+                <input id="accountID" type="text" value="">
+            </div>
+
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px; " >
+                <div>Web PropertyID</div>
+                <input id="webPropertyId" type="text" value="">
+            </div>
+
+          <!--  <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px; " >
+                <div>View Id</div>
+                <input type="text" value="">
+            </div> -->
+            
+            <input name="Submit" type="button" onclick="insertCustomDimensionsAll()" value="Insert Custom Dimensions">
+            </form>
+
+
+        </div>
+
+    </div>
+    <div class="row">
+        <p> Newly created profile needs to upgraded to GA360. Post that "Custom Dimensions" can be uploaded. </p>
+    </div>
+
+    <!--
+<div class="row">
+
+<button onclick="authenticate().then(loadClient)">authorize and load</button>
+<br>
+Helloo GA Tester
+<br> 
+<p> 
+<button onclick="queryAccounts()">execute</button>  
+  </p>   <form class="formEl" onSubmit="return queryAccounts()">
+  
+ <div class="formEl" >
+
+  <input name="Submit" type="button" onclick="uploadCDGoalsFiltersss('147445745','UA-147445745-19','236800238')" value="Upload Goals">
+    
+</div> 
+
+</div>
+
+ <div class="formEl" >
+
+  <input name="Submit" type="button" onclick="checkExistingFilters('147445745')" value="Upload Goals">
+    
+</div> -->
+    <script>
+	
+function insertCustomDimensions() {
+
+swal({
+  title: "Account created is not GA360 !",
+  text: "Please convert to GA360 to insert Custom Dimensions \n"+ globalAccID +"   " + globalPropertyID + "  "+globalViewID,
+  icon: "warning",
+ // buttons: ["Cancel", "Continue"],
+})
+/*.then((plzContinue) => {  if (plzContinue) {
+   readCustomDimensionsXLS();
+      } else {
+    swal("Cancelled - Run CD Utility!");
+  }
+}); */
+
+}
+
+        function insertCustomDimensionsAll() {
+
+  globalAccID = document.getElementById("accountID").value;
+  globalPropertyID = document.getElementById("webPropertyId").value;
+  
+  gapi.client.load('analytics', 'v3').then(function() {
+     readCustomDimensionsXLS();
+  });
+                    
+                } 
+        
+
+
+        function readCustomDimensionsXLS() {
+            console.log("insert CD...");
+            console.log("Reading customDimensions xlsx...");
+
+            var url = "https://pradeepecom.000webhostapp.com/Studio%20Initiative-GA%20Automation/customDimensionDetails.xlsx";
+
+            //var excelRows = readXLSX(url);
+
+            var oReq = new XMLHttpRequest();
+
+            oReq.open("GET", url, true);
+            oReq.responseType = "arraybuffer";
+            console.log("read customDimensionDetails XL File..");
+            oReq.onload = function (e) {
+                var arraybuffer = oReq.response;
+                /* convert data to binary string */
+                var data = new Uint8Array(arraybuffer);
+                var arr = new Array();
+                for (var i = 0; i != data.length; ++i) arr[i] = String.fromCharCode(data[i]);
+                var bstr = arr.join("");
+
+                /* Call XLSX */
+                var workbook = XLSX.read(bstr, { type: "binary" });
+                var Sheet = workbook.SheetNames[0];
+
+                //Read all rows from First Sheet into an JSON array.
+                var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
+
+                console.log(excelRows);
+                myCustomDimLoopExcel(excelRows);
+
+            }
+            oReq.send();
+
+        }
+
+
+
+        var jj = 0;                  //  set your counter to 1
+        function myCustomDimLoopExcel(excelRows) {         //  create a loop function
+            setTimeout(function () {   //  call a 3s setTimeout when the loop is called
+
+                var CDName = excelRows[jj].CustomDimensionName;
+                var CDIndex = excelRows[jj].Index;
+                var CDscope = excelRows[jj].Scope;
+                var CDActive = excelRows[jj].Active;
+                if (CDActive == "Active") {
+                    CDActive = true
+                }
+                else if (CDActive == "Inactive") {
+                    CDActive = false
+                }
+                insertCustomDimensionDetails(CDName, CDscope, CDActive);
+
+
+                jj++;                    //  increment the counter
+                if (jj < excelRows.length) {           //  if the counter < 10, call the loop function
+                    myCustomDimLoopExcel(excelRows);             //  ..  again which will trigger another 
+                }                       //  ..  setTimeout()
+            }, 1000)
+        }
+
+
+        function insertCustomDimensionDetails(CDName, CDscope, CDActive) {
+            console.log('inserting CDs..' + CDName + " " + CDscope + " " + CDActive);
+            return gapi.client.analytics.management.customDimensions.insert({
+                "accountId": globalAccID,
+                "webPropertyId": globalPropertyID,
+                "resource": {
+                    "name": CDName,
+                    "scope": CDscope,
+                    "active": CDActive
+                }
+            })
+                .then(function (response) {
+                    // Handle the results here (response.result has the parsed body).
+                    console.log("Response", response);
+                },
+                    function (err) {
+                        console.error("Execute error", err);
+                    });
+
+        }
+    </script>
+    <div class="footer">
+        <h2>Footer</h2>
+    </div>
+
+</body>
+
+</html>
+<!--
+Sapient.ganalytics@gmail.com- analyticsprofiles@360
+sapient.ganalyticsd2@gmail.com
+d2analyticsbrandprofiles@360 
+-->
